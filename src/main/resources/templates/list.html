@@ -8,12 +8,11 @@
     <title>Document</title>
 </head>
 <body>
-    <a href="index">첫번째 글</a>
-    <br>
-    <a href="index">두번째 글</a>
-    <br>
-    <a href="index">세번째 글</a>
+    <div th:each="post : ${posts}">
+        <a th:href="@{/detail(id=${post.id})}"
+           th:text="${post.title}">
+        </a>
+    </div>
 
-    <span th:text="${title}"></span>
 </body>
 </html>
