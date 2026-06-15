@@ -1,18 +1,32 @@
 package org.mysite.crud_board;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.ArrayList;
 import java.util.List;
 
+
+@Entity
 class Post {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+
     private Long id;
     private String title;
     private String content;
+
+    //jpa가 db에서 데이터를 꺼낼 때 빈 객체를 먼저 만들고 나서 값을 채우는 방식으로 동작해서 아무 인자 없는 no-arg생성자가 있어야됨
+    protected Post() {}
 
     public Post(Long id, String title, String content) {
         this.id = id;
@@ -30,6 +44,18 @@ class Post {
 
     public String getContent() {
         return content;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
     }
 }
 
@@ -72,5 +98,64 @@ public class HomeController {
         return "detail";
     }
 
+    @GetMapping("/write")
+    public String write() {
+        return "write";
+    }
 
+    @PostMapping("/write")
+    public String create(@RequestParam String title, @RequestParam String content) {
+        Long id = (long) (posts.size() + 1);
+
+        Post post = new Post(id, title, content);
+
+        posts.add(post);
+
+        return "redirect:/list";
+    }
+
+    //삭제
+    @PostMapping("/delete")
+    public String delete(@RequestParam Long id) {
+
+        posts.removeIf(post -> post.getId().equals(id));
+
+        return "redirect:/list";
+    }
+
+
+    @GetMapping("/edit")
+    public String edit(@RequestParam Long id, Model model) {
+        Post post = findPostById(id);
+
+        model.addAttribute("post", post);
+
+        return "edit";
+    }
+
+    @PostMapping("/edit")
+    public String edit(
+            @RequestParam Long id,
+            @RequestParam String title,
+            @RequestParam String content
+    ) {
+
+        Post post = findPostById(id);
+
+        if (post != null) {
+            post.setTitle(title);
+            post.setContent(content);
+        }
+
+        return "redirect:/detail?id=" + id;
+    }
+
+    private Post findPostById(Long id) {
+        for (Post post : posts) {
+            if (post.getId().equals(id)) {
+                return post;
+            }
+        }
+        return null;
+    }
 }

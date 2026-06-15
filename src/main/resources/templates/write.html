@@ -8,14 +8,10 @@
     <title>Document</title>
 </head>
 <body>
-    <div th:each="post : ${posts}">
-        <a th:href="@{/detail(id=${post.id})}"
-           th:text="${post.title}">
-        </a>
-    </div>
-
-    <a href="/write">글쓰기</a>
-
-
+    <form action ="/write" method ="post">
+        <input type="text" name="title"/>
+        <textarea name="content"></textarea>
+        <button type="submit">등록</button>
+    </form>
 </body>
 </html>
