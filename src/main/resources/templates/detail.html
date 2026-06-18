@@ -7,10 +7,15 @@
            name="id"
            th:value="${post.id}">
 
-    <button type="submit">
-        삭제
-    </button>
+    <p>작성자:<span th:text="${post.writer.username}">홍길동</span></p>
 
-    <a th:href="@{/edit(id=${post.id})}">수정</a>
+    <div th:if="${session.loginUser != null and session.loginUser.id == post.writer.id}">
+        <button type="submit">삭제</button>
+        <br>
+        <a th:href="@{/edit(id=${post.id})}">수정</a>
+    </div>
+
+
+
     <a href="/list">목록</a>
 </form>

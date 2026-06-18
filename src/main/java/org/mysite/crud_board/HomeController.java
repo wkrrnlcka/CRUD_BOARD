@@ -1,9 +1,6 @@
 package org.mysite.crud_board;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,63 +8,17 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.util.ArrayList;
-import java.util.List;
-
-
-@Entity
-class Post {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-
-    private Long id;
-    private String title;
-    private String content;
-
-    //jpa가 db에서 데이터를 꺼낼 때 빈 객체를 먼저 만들고 나서 값을 채우는 방식으로 동작해서 아무 인자 없는 no-arg생성자가 있어야됨
-    protected Post() {}
-
-    public Post(Long id, String title, String content) {
-        this.id = id;
-        this.title = title;
-        this.content = content;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public void setContent(String content) {
-        this.content = content;
-    }
-}
 
 @Controller
 public class HomeController {
 
-    List<Post> posts = new ArrayList<>();
+    private final PostService postService;
+    private final userService userService;
 
-    public HomeController() {
-        posts.add(new Post(1L, "스프링 공부하기", "스프링 MVC 공부중"));
-        posts.add(new Post(2L, "CRUD 구현하기", "게시판 CRUD 구현"));
-        posts.add(new Post(3L, "JPA 공부하기", "JPA 기초 학습"));
+    public HomeController(PostService postService,
+                          userService userService) {
+        this.postService = postService;
+        this.userService = userService;
     }
 
     @RequestMapping("/index")
@@ -76,49 +27,68 @@ public class HomeController {
     }
 
     @RequestMapping("/list")
-    public String list(Model model) {
-        model.addAttribute("posts", posts);
+    public String list(HttpSession session, Model model) {
+
+        User loginUser = (User) session.getAttribute("loginUser");
+
+        if(loginUser != null) {
+            model.addAttribute("user", loginUser);
+        }
+
+        model.addAttribute("posts", postService.findAll());
         return "list";
     }
 
     @GetMapping("/detail")
     public String detail(@RequestParam Long id, Model model) {
-
-        Post foundPost = null;
-
-        for (Post post : posts) {
-            if (post.getId().equals(id)) {
-                foundPost = post;
-                break;
-            }
-        }
-
-        model.addAttribute("post", foundPost);
+        Post post = postService.findById(id);
+        model.addAttribute("post", post);
 
         return "detail";
     }
 
     @GetMapping("/write")
-    public String write() {
+    public String write(HttpSession session) {
+        User loginUser = (User) session.getAttribute("loginUser");
+        if (loginUser == null) {
+            return "redirect:/login";
+        }
+
         return "write";
     }
 
     @PostMapping("/write")
-    public String create(@RequestParam String title, @RequestParam String content) {
-        Long id = (long) (posts.size() + 1);
+    public String create(@RequestParam String title,
+                         @RequestParam String content,
+                         HttpSession session) {
+        User loginUser = (User) session.getAttribute("loginUser");
+        if (loginUser == null) {
+            return "redirect:/login";
+        }
 
-        Post post = new Post(id, title, content);
 
-        posts.add(post);
+        Post post = new Post(title, content, loginUser);
+        postService.save(post);
 
         return "redirect:/list";
     }
 
     //삭제
     @PostMapping("/delete")
-    public String delete(@RequestParam Long id) {
+    public String delete(@RequestParam Long id, HttpSession session) {
+        User loginUser = (User) session.getAttribute("loginUser");
 
-        posts.removeIf(post -> post.getId().equals(id));
+        if (loginUser == null) {
+            return "redirect:/login";
+        }
+
+        Post post = postService.findById(id);
+
+        if(!post.getWriter().getId().equals(loginUser.getId())) {
+            return "redirect:/list";
+        }
+
+        postService.deleteById(id);
 
         return "redirect:/list";
     }
@@ -126,10 +96,8 @@ public class HomeController {
 
     @GetMapping("/edit")
     public String edit(@RequestParam Long id, Model model) {
-        Post post = findPostById(id);
-
+        Post post = postService.findById(id);
         model.addAttribute("post", post);
-
         return "edit";
     }
 
@@ -140,22 +108,59 @@ public class HomeController {
             @RequestParam String content
     ) {
 
-        Post post = findPostById(id);
-
+        Post post = postService.findById(id);
         if (post != null) {
             post.setTitle(title);
             post.setContent(content);
+            postService.save(post);
         }
 
         return "redirect:/detail?id=" + id;
     }
 
-    private Post findPostById(Long id) {
-        for (Post post : posts) {
-            if (post.getId().equals(id)) {
-                return post;
-            }
-        }
-        return null;
+    @GetMapping("/signup")
+    public String signup() {
+        return "signup";
     }
+
+    @PostMapping("/signup")
+    public String signup(@RequestParam String username,
+                         @RequestParam String password
+                         ) {
+
+        User user = new User(username, password);
+
+        userService.save(user);
+
+        return "redirect:/login";
+    }
+
+    @GetMapping("/login")
+    public String login() {
+        return "login";
+    }
+
+    @PostMapping("/login")
+    public String login(@RequestParam String username,
+                         @RequestParam String password,
+                         HttpSession session) {
+
+        User user = userService.login(username, password);
+
+        if (user != null) {
+            session.setAttribute("loginUser", user);
+            return "redirect:/list";
+        }
+
+        return "redirect:/login";
+    }
+
+
+    @GetMapping("/logout")
+    public String logout(HttpSession session) {
+        session.invalidate();
+        return "redirect:/list";
+    }
+
+
 }

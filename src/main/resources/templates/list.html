@@ -8,11 +8,29 @@
     <title>Document</title>
 </head>
 <body>
+
+    <div class = "header">
+        <div th:if="${user != null}">
+            <p><span th:text="${user.username}">사용자이름</span>님 환영합니다!</p>
+            <a href="/logout">로그아웃</a>
+        </div>
+
+        <div th:if="${user == null}">
+            <a href="/login">로그인</a>
+            <a href="/signup">회원가입</a>
+        </div>
+
+        <br>
+
+    </div>
+
     <div th:each="post : ${posts}">
         <a th:href="@{/detail(id=${post.id})}"
            th:text="${post.title}">
         </a>
     </div>
+
+    <br>
 
     <a href="/write">글쓰기</a>
 
