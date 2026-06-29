@@ -12,6 +12,11 @@ public class Post {
     private Long id;
     private String title;
     private String content;
+    private Integer views = 0;
+
+
+    @Version
+    private Long version;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -30,6 +35,14 @@ public class Post {
         this.content = content;
         this.writer = writer;
     }
+
+    public Post(String title, String content, User writer,Integer views) {
+        this.title = title;
+        this.content = content;
+        this.writer = writer;
+        this.views = views;
+    }
+
 
     public Long getId() {
         return id;
@@ -58,4 +71,13 @@ public class Post {
     public User getWriter(){
         return writer;
     }
+
+    public Integer getViews() {
+        return views == null ? 0 : views;
+    }
+
+    public void increaseViews() {
+        this.views += 1;
+    }
+
 }

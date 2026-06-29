@@ -1,20 +1,27 @@
 package org.mysite.crud_board;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
 @Service
-public class userService {
+public class UserService {
     private final UserRepository userRepository;
 
-    public userService(UserRepository userRepository) {
+    private final PasswordEncoder passwordEncoder;
+
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public void save(User user) {
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
     }
+
+
 
     public User login(String username, String password) {
         Optional<User> optionalUser = userRepository.findByUsername(username);
@@ -22,11 +29,13 @@ public class userService {
         if (optionalUser.isPresent()) {
             User user = optionalUser.get();
 
-            if (user.getPassword().equals(password)) {
+            if (passwordEncoder.matches(password, user.getPassword())) {
                 return user;
             }
         }
         return null;
     }
+
+
 }
 

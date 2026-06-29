@@ -1,5 +1,6 @@
 package org.mysite.crud_board;
 
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
@@ -26,5 +27,12 @@ public class PostService {
 
     public void deleteById(Long id) {
         postRepository.deleteById(id);
+    }
+
+    @Transactional
+    public Post getPostDetail(Long id) {
+        postRepository.updateViews(id);
+        return postRepository.findById(id)
+                .orElseThrow(()-> new IllegalArgumentException("Post Not Found"));
     }
 }

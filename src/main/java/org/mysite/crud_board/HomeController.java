@@ -13,10 +13,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class HomeController {
 
     private final PostService postService;
-    private final userService userService;
+    private final UserService userService;
 
     public HomeController(PostService postService,
-                          userService userService) {
+                          UserService userService) {
         this.postService = postService;
         this.userService = userService;
     }
@@ -41,7 +41,7 @@ public class HomeController {
 
     @GetMapping("/detail")
     public String detail(@RequestParam Long id, Model model) {
-        Post post = postService.findById(id);
+        Post post = postService.getPostDetail(id);
         model.addAttribute("post", post);
 
         return "detail";
@@ -105,18 +105,27 @@ public class HomeController {
     public String edit(
             @RequestParam Long id,
             @RequestParam String title,
-            @RequestParam String content
+            @RequestParam String content,
+            HttpSession session
     ) {
 
         Post post = postService.findById(id);
-        if (post != null) {
-            post.setTitle(title);
-            post.setContent(content);
-            postService.save(post);
+        User loginUser = (User)session.getAttribute("loginUser");
+        if(loginUser == null) {
+            return "redirect:/list";
         }
+        if(!post.getWriter().getId().equals(loginUser.getId())) {
+            return "redirect:/list";
+        }
+
+        post.setTitle(title);
+        post.setContent(content);
+        postService.save(post);
+
 
         return "redirect:/detail?id=" + id;
     }
+
 
     @GetMapping("/signup")
     public String signup() {
